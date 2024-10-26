@@ -46,7 +46,7 @@ function App() {
   const handleSearch = useCallback((query: string, campus: string) => {
     setSearchQuery(query);
     setSelectedCampus(campus);
-    setCurrentPage(1);
+    setCurrentPage(1); // Reset to first page when search changes
   }, []);
 
   const filteredSections = useMemo(() => {
@@ -97,8 +97,9 @@ function App() {
   }, []);
 
   const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(Math.min(Math.max(1, page), totalPages));
-  }, [totalPages]);
+    setCurrentPage(page);
+    window.scrollTo(0, 0); // Scroll to top when page changes
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -144,7 +145,7 @@ function App() {
                 currentPage={currentPage}
               />
               <p className="text-sm text-gray-600 mt-4">
-                Mostrando {currentSections.length} de {totalItems} resultados
+                Mostrando {Math.min(currentPage * itemsPerPage, totalItems) - ((currentPage - 1) * itemsPerPage)} de {totalItems} resultados
                 {selectedCampus && ` en ${selectedCampus}`}
               </p>
             </>
