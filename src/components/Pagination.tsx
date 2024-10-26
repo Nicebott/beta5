@@ -14,25 +14,30 @@ const Pagination: React.FC<PaginationProps> = ({
   paginate,
   currentPage
 }) => {
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
   const pageNumbers = useMemo(() => {
+    if (totalPages <= 1) return [];
+    
     const delta = 2;
     const range = [];
     const rangeWithDots = [];
     let l;
 
+    // Always add first page
     range.push(1);
 
-    if (totalPages <= 1) return range;
-
-    for (let i = currentPage - delta; i <= currentPage + delta; i++) {
-      if (i < totalPages && i > 1) {
-        range.push(i);
-      }
+    // Calculate range around current page
+    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+      range.push(i);
     }
-    range.push(totalPages);
 
+    // Always add last page
+    if (totalPages > 1) {
+      range.push(totalPages);
+    }
+
+    // Add dots between numbers if needed
     for (let i = 0; i < range.length; i++) {
       if (l) {
         if (range[i] - l === 2) {
@@ -48,14 +53,15 @@ const Pagination: React.FC<PaginationProps> = ({
     return rangeWithDots;
   }, [currentPage, totalPages]);
 
-  if (totalPages <= 1) return null;
+  if (pageNumbers.length <= 1) return null;
 
   return (
-    <nav className="flex justify-center items-center space-x-1 mt-4">
+    <nav className="flex justify-center items-center space-x-1 mt-4" aria-label="Pagination">
       <button
         onClick={() => paginate(currentPage - 1)}
         disabled={currentPage === 1}
         className="px-3 py-1 rounded-md bg-white text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        aria-label="Previous page"
       >
         <ChevronLeft size={20} />
       </button>
@@ -70,6 +76,7 @@ const Pagination: React.FC<PaginationProps> = ({
               ? 'bg-blue-600 text-white'
               : 'bg-white text-blue-600 hover:bg-blue-50'
           } ${typeof number !== 'number' ? 'cursor-default' : ''}`}
+          aria-current={currentPage === number ? 'page' : undefined}
         >
           {number}
         </button>
@@ -79,6 +86,7 @@ const Pagination: React.FC<PaginationProps> = ({
         onClick={() => paginate(currentPage + 1)}
         disabled={currentPage === totalPages}
         className="px-3 py-1 rounded-md bg-white text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        aria-label="Next page"
       >
         <ChevronRight size={20} />
       </button>

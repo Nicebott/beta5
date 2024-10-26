@@ -3,7 +3,7 @@ import { GraduationCap, Menu, X } from 'lucide-react';
 import SearchBar from './components/SearchBar';
 import CourseTable from './components/CourseTable';
 import Pagination from './components/Pagination';
-import { Course, Section, SearchResult } from './types';
+import { Course, Section } from './types';
 import { fetchCourseData } from './api/courseData';
 import { removeDiacritics } from './utils/stringUtils';
 
@@ -31,7 +31,6 @@ function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [allSections, setAllSections] = useState<Section[]>([]);
-  const [filteredSections, setFilteredSections] = useState<Section[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [selectedCampus, setSelectedCampus] = useState<string>('');
@@ -41,21 +40,19 @@ function App() {
     fetchCourseData().then(({ courses, sections }) => {
       setAllCourses(courses);
       setAllSections(sections);
-      setFilteredSections(sections);
     });
   }, []);
 
   const handleSearch = useCallback((query: string, campus: string) => {
     setSearchQuery(query);
     setSelectedCampus(campus);
-    setCurrentPage(1); // Reset to first page on new search
+    setCurrentPage(1);
   }, []);
 
-  // Memoize the filtered results
-  const searchResults = useMemo(() => {
+  const filteredSections = useMemo(() => {
     const normalizedQuery = removeDiacritics(searchQuery.toLowerCase());
     
-    const filtered = allSections.filter(section => {
+    return allSections.filter(section => {
       const matchesSearch = !normalizedQuery || 
         removeDiacritics(section.professor.toLowerCase()).includes(normalizedQuery) ||
         allCourses.some(course => 
@@ -68,14 +65,11 @@ function App() {
 
       return matchesSearch && matchesCampus;
     });
-
-    return filtered;
   }, [allSections, allCourses, searchQuery, selectedCampus]);
 
-  // Calculate pagination
-  const totalItems = searchResults.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  
+  const totalItems = filteredSections.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
   // Ensure current page is valid
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -84,10 +78,10 @@ function App() {
   }, [totalPages, currentPage]);
 
   // Get current page items
-  const currentSections = searchResults.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const currentSections = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredSections.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredSections, currentPage, itemsPerPage]);
 
   const currentCourses = useMemo(() => {
     const courseIds = new Set(currentSections.map(section => section.courseId));
@@ -101,6 +95,10 @@ function App() {
       )
     );
   }, []);
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(Math.min(Math.max(1, page), totalPages));
+  }, [totalPages]);
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -142,11 +140,12 @@ function App() {
               <Pagination
                 itemsPerPage={itemsPerPage}
                 totalItems={totalItems}
-                paginate={setCurrentPage}
+                paginate={handlePageChange}
                 currentPage={currentPage}
               />
               <p className="text-sm text-gray-600 mt-4">
-                Mostrando {Math.min(currentPage * itemsPerPage, totalItems) - ((currentPage - 1) * itemsPerPage)} de {totalItems} resultados
+                Mostrando {currentSections.length} de {totalItems} resultados
+                {selectedCampus && ` en ${selectedCampus}`}
               </p>
             </>
           ) : (
