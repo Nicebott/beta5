@@ -6,13 +6,15 @@ interface PaginationProps {
   totalItems: number;
   paginate: (pageNumber: number) => void;
   currentPage: number;
+  darkMode: boolean;
 }
 
 const Pagination: React.FC<PaginationProps> = ({
   itemsPerPage,
   totalItems,
   paginate,
-  currentPage
+  currentPage,
+  darkMode
 }) => {
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
@@ -24,20 +26,16 @@ const Pagination: React.FC<PaginationProps> = ({
     const rangeWithDots = [];
     let l;
 
-    // Always add first page
     range.push(1);
 
-    // Calculate range around current page
     for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
       range.push(i);
     }
 
-    // Always add last page
     if (totalPages > 1) {
       range.push(totalPages);
     }
 
-    // Add dots between numbers if needed
     for (let i = 0; i < range.length; i++) {
       if (l) {
         if (range[i] - l === 2) {
@@ -60,7 +58,11 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={() => paginate(currentPage - 1)}
         disabled={currentPage === 1}
-        className="px-3 py-1 rounded-md bg-white text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        className={`px-3 py-1 rounded-md ${
+          darkMode
+            ? 'bg-gray-800 text-blue-400 hover:bg-gray-700 disabled:text-gray-600'
+            : 'bg-white text-blue-600 hover:bg-blue-50 disabled:text-gray-400'
+        } disabled:opacity-50 disabled:cursor-not-allowed`}
         aria-label="Previous page"
       >
         <ChevronLeft size={20} />
@@ -73,8 +75,12 @@ const Pagination: React.FC<PaginationProps> = ({
           disabled={typeof number !== 'number'}
           className={`px-3 py-1 rounded-md ${
             currentPage === number
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-blue-600 hover:bg-blue-50'
+              ? darkMode
+                ? 'bg-blue-600 text-white'
+                : 'bg-blue-600 text-white'
+              : darkMode
+                ? 'bg-gray-800 text-blue-400 hover:bg-gray-700'
+                : 'bg-white text-blue-600 hover:bg-blue-50'
           } ${typeof number !== 'number' ? 'cursor-default' : ''}`}
           aria-current={currentPage === number ? 'page' : undefined}
         >
@@ -85,7 +91,11 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={() => paginate(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="px-3 py-1 rounded-md bg-white text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        className={`px-3 py-1 rounded-md ${
+          darkMode
+            ? 'bg-gray-800 text-blue-400 hover:bg-gray-700 disabled:text-gray-600'
+            : 'bg-white text-blue-600 hover:bg-blue-50 disabled:text-gray-400'
+        } disabled:opacity-50 disabled:cursor-not-allowed`}
         aria-label="Next page"
       >
         <ChevronRight size={20} />
