@@ -51,10 +51,12 @@ function App() {
   }, [darkMode]);
 
   useEffect(() => {
-    fetchCourseData().then(({ courses, sections }) => {
+    const loadData = async () => {
+      const { courses, sections } = await fetchCourseData();
       setAllCourses(courses);
       setAllSections(sections);
-    });
+    };
+    loadData();
   }, []);
 
   const handleSearch = useCallback((query: string, campus: string) => {
@@ -81,8 +83,7 @@ function App() {
     });
   }, [allSections, allCourses, searchQuery, selectedCampus]);
 
-  const totalItems = filteredSections.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const totalPages = Math.max(1, Math.ceil(filteredSections.length / itemsPerPage));
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -96,8 +97,8 @@ function App() {
   }, [filteredSections, currentPage, itemsPerPage]);
 
   const currentCourses = useMemo(() => {
-    const courseIds = new Set(currentSections.map(section => section.courseId));
-    return allCourses.filter(course => courseIds.has(course.id));
+    const uniqueCourseIds = new Set(currentSections.map(section => section.courseId));
+    return allCourses.filter(course => uniqueCourseIds.has(course.id));
   }, [currentSections, allCourses]);
 
   const handleRateSection = useCallback((sectionId: string, rating: number) => {
@@ -109,8 +110,8 @@ function App() {
   }, []);
 
   const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(Math.min(Math.max(1, page), totalPages));
-  }, [totalPages]);
+    setCurrentPage(page);
+  }, []);
 
   const toggleDarkMode = () => {
     setDarkMode(prev => !prev);
@@ -170,13 +171,13 @@ function App() {
               />
               <Pagination
                 itemsPerPage={itemsPerPage}
-                totalItems={totalItems}
+                totalItems={filteredSections.length}
                 paginate={handlePageChange}
                 currentPage={currentPage}
                 darkMode={darkMode}
               />
               <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-4`}>
-                Mostrando {currentSections.length} de {totalItems} resultados
+                Mostrando {currentSections.length} de {filteredSections.length} resultados
                 {selectedCampus && ` en ${selectedCampus}`}
               </p>
             </>
