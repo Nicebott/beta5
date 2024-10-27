@@ -9,9 +9,6 @@ export async function fetchCourseData(): Promise<{ courses: Course[], sections: 
     const sections: Section[] = [];
 
     data.forEach((item: any) => {
-      // Convert rating from "N/A" or "X/10" to number
-      const rating = item.calificacion === "N/A" ? 0 : parseInt(item.calificacion.split('/')[0]);
-
       if (!coursesMap.has(item.clave)) {
         coursesMap.set(item.clave, {
           id: item.clave,
@@ -26,13 +23,14 @@ export async function fetchCourseData(): Promise<{ courses: Course[], sections: 
         professor: item.profesor,
         schedule: item.horario,
         campus: item.provincia,
-        rating,
+        rating: parseInt(item.calificacion.split('/')[0]),
         nrc: item.nrc,
         modalidad: item.modalidad
       });
     });
 
     const courses = Array.from(coursesMap.values());
+
     return { courses, sections };
   } catch (error) {
     console.error('Error fetching course data:', error);

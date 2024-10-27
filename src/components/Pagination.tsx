@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PaginationProps {
@@ -6,97 +6,64 @@ interface PaginationProps {
   totalItems: number;
   paginate: (pageNumber: number) => void;
   currentPage: number;
-  darkMode: boolean;
 }
 
-const Pagination: React.FC<PaginationProps> = ({
-  itemsPerPage,
-  totalItems,
-  paginate,
-  currentPage,
-  darkMode
-}) => {
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+const Pagination: React.FC<PaginationProps> = ({ itemsPerPage, totalItems, paginate, currentPage }) => {
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const maxVisibleButtons = 5;
 
-  const pageNumbers = useMemo(() => {
-    if (totalPages <= 1) return [];
-    
-    const delta = 2;
-    const range = [];
-    const rangeWithDots = [];
-    let l;
-
-    range.push(1);
-
-    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
-      range.push(i);
+  const getPageNumbers = () => {
+    if (totalPages <= maxVisibleButtons) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
 
-    if (totalPages > 1) {
-      range.push(totalPages);
+    const leftSiblingIndex = Math.max(currentPage - 1, 1);
+    const rightSiblingIndex = Math.min(currentPage + 1, totalPages);
+
+    const shouldShowLeftDots = leftSiblingIndex > 2;
+    const shouldShowRightDots = rightSiblingIndex < totalPages - 2;
+
+    if (!shouldShowLeftDots && shouldShowRightDots) {
+      const leftItemCount = 3;
+      return [...Array.from({ length: leftItemCount }, (_, i) => i + 1), '...', totalPages];
     }
 
-    for (let i = 0; i < range.length; i++) {
-      if (l) {
-        if (range[i] - l === 2) {
-          rangeWithDots.push(l + 1);
-        } else if (range[i] - l !== 1) {
-          rangeWithDots.push('...');
-        }
-      }
-      rangeWithDots.push(range[i]);
-      l = range[i];
+    if (shouldShowLeftDots && !shouldShowRightDots) {
+      const rightItemCount = 3;
+      return [1, '...', ...Array.from({ length: rightItemCount }, (_, i) => totalPages - rightItemCount + i + 1)];
     }
 
-    return rangeWithDots;
-  }, [currentPage, totalPages]);
-
-  if (pageNumbers.length <= 1) return null;
+    if (shouldShowLeftDots && shouldShowRightDots) {
+      return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+    }
+  };
 
   return (
-    <nav className="flex justify-center items-center space-x-1 mt-4" aria-label="Pagination">
+    <nav className="flex justify-center items-center space-x-2 mt-4 overflow-x-auto px-4 py-2">
       <button
-        onClick={() => paginate(currentPage - 1)}
+        onClick={() => paginate(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
-        className={`px-3 py-1 rounded-md ${
-          darkMode
-            ? 'bg-gray-800 text-blue-400 hover:bg-gray-700 disabled:text-gray-600'
-            : 'bg-white text-blue-600 hover:bg-blue-50 disabled:text-gray-400'
-        } disabled:opacity-50 disabled:cursor-not-allowed`}
-        aria-label="Previous page"
+        className="px-2 py-1 rounded bg-white text-blue-500 hover:bg-blue-100 disabled:opacity-50"
       >
         <ChevronLeft size={20} />
       </button>
-      
-      {pageNumbers.map((number, index) => (
+      {getPageNumbers()?.map((number, index) => (
         <button
           key={index}
-          onClick={() => typeof number === 'number' ? paginate(number) : undefined}
-          disabled={typeof number !== 'number'}
-          className={`px-3 py-1 rounded-md ${
+          onClick={() => typeof number === 'number' ? paginate(number) : null}
+          className={`px-3 py-1 rounded ${
             currentPage === number
-              ? darkMode
-                ? 'bg-blue-600 text-white'
-                : 'bg-blue-600 text-white'
-              : darkMode
-                ? 'bg-gray-800 text-blue-400 hover:bg-gray-700'
-                : 'bg-white text-blue-600 hover:bg-blue-50'
+              ? 'bg-blue-500 text-white'
+              : 'bg-white text-blue-500 hover:bg-blue-100'
           } ${typeof number !== 'number' ? 'cursor-default' : ''}`}
-          aria-current={currentPage === number ? 'page' : undefined}
         >
           {number}
         </button>
       ))}
-
       <button
-        onClick={() => paginate(currentPage + 1)}
+        onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
-        className={`px-3 py-1 rounded-md ${
-          darkMode
-            ? 'bg-gray-800 text-blue-400 hover:bg-gray-700 disabled:text-gray-600'
-            : 'bg-white text-blue-600 hover:bg-blue-50 disabled:text-gray-400'
-        } disabled:opacity-50 disabled:cursor-not-allowed`}
-        aria-label="Next page"
+        className="px-2 py-1 rounded bg-white text-blue-500 hover:bg-blue-100 disabled:opacity-50"
       >
         <ChevronRight size={20} />
       </button>
