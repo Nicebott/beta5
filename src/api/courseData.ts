@@ -9,28 +9,47 @@ export async function fetchCourseData(): Promise<{ courses: Course[], sections: 
     const sections: Section[] = [];
 
     data.forEach((item: any) => {
-      if (!coursesMap.has(item.clave)) {
-        coursesMap.set(item.clave, {
-          id: item.clave,
-          name: item.asignatura,
-          code: item.clave
-        });
+      // Safely handle missing or malformed data
+      const nrc = String(item.nrc || '').trim();
+      const asignatura = String(item.asignatura || '').trim();
+      const profesor = String(item.profesor === null || item.profesor === undefined || item.profesor === 'NaN' ? 'Sin profesor asignado' : item.profesor).trim();
+      const horario = String(item.horario || 'Horario no especificado').trim();
+      const modalidad = String(item.modalidad || 'No especificada').trim();
+      const provincia = String(item.provincia || 'No especificada').trim();
+      const clave = String(item.clave || nrc).trim();
+
+      // Convert rating from "N/A" or "X/10" to number, handle NaN
+      let rating = 0;
+      if (item.calificacion && item.calificacion !== 'N/A') {
+        const ratingMatch = String(item.calificacion).match(/(\d+)/);
+        rating = ratingMatch ? parseInt(ratingMatch[1], 10) : 0;
+        rating = isNaN(rating) ? 0 : rating;
       }
 
-      sections.push({
-        id: item.nrc,
-        courseId: item.clave,
-        professor: item.profesor,
-        schedule: item.horario,
-        campus: item.provincia,
-        rating: parseInt(item.calificacion.split('/')[0]),
-        nrc: item.nrc,
-        modalidad: item.modalidad
-      });
+      // Only process items with required minimum data
+      if (nrc && asignatura) {
+        if (!coursesMap.has(clave)) {
+          coursesMap.set(clave, {
+            id: clave,
+            name: asignatura,
+            code: clave
+          });
+        }
+
+        sections.push({
+          id: `${nrc}-${clave}-${profesor}-${horario}-${provincia}`, // Create unique ID
+          courseId: clave,
+          professor: profesor,
+          schedule: horario,
+          campus: provincia,
+          rating,
+          nrc,
+          modalidad
+        });
+      }
     });
 
     const courses = Array.from(coursesMap.values());
-
     return { courses, sections };
   } catch (error) {
     console.error('Error fetching course data:', error);
