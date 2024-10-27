@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { GraduationCap, Menu, X } from 'lucide-react';
+import { GraduationCap, Menu, X, Moon, Sun } from 'lucide-react';
 import SearchBar from './components/SearchBar';
 import CourseTable from './components/CourseTable';
 import Pagination from './components/Pagination';
+import Chat from './components/Chat';
 import { Course, Section } from './types';
 import { fetchCourseData } from './api/courseData';
 import { removeDiacritics } from './utils/stringUtils';
@@ -35,12 +36,27 @@ function App() {
   const [itemsPerPage] = useState(10);
   const [selectedCampus, setSelectedCampus] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedMode = localStorage.getItem('darkMode');
+    return savedMode ? JSON.parse(savedMode) : false;
+  });
 
   useEffect(() => {
-    fetchCourseData().then(({ courses, sections }) => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+  }, [darkMode]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const { courses, sections } = await fetchCourseData();
       setAllCourses(courses);
       setAllSections(sections);
-    });
+    };
+    loadData();
   }, []);
 
   const handleSearch = useCallback((query: string, campus: string) => {
@@ -67,25 +83,22 @@ function App() {
     });
   }, [allSections, allCourses, searchQuery, selectedCampus]);
 
-  const totalItems = filteredSections.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const totalPages = Math.max(1, Math.ceil(filteredSections.length / itemsPerPage));
 
-  // Ensure current page is valid
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(Math.max(1, totalPages));
     }
   }, [totalPages, currentPage]);
 
-  // Get current page items
   const currentSections = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredSections.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredSections, currentPage, itemsPerPage]);
 
   const currentCourses = useMemo(() => {
-    const courseIds = new Set(currentSections.map(section => section.courseId));
-    return allCourses.filter(course => courseIds.has(course.id));
+    const uniqueCourseIds = new Set(currentSections.map(section => section.courseId));
+    return allCourses.filter(course => uniqueCourseIds.has(course.id));
   }, [currentSections, allCourses]);
 
   const handleRateSection = useCallback((sectionId: string, rating: number) => {
@@ -97,27 +110,44 @@ function App() {
   }, []);
 
   const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(Math.min(Math.max(1, page), totalPages));
-  }, [totalPages]);
+    setCurrentPage(page);
+  }, []);
+
+  const toggleDarkMode = () => {
+    setDarkMode(prev => !prev);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <header className="bg-white shadow-md">
+    <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gray-100'}`}>
+      <header className={`${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-md`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center relative">
           <div className="flex items-center">
-            <GraduationCap size={48} className="text-blue-600 mr-4" />
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
+            <GraduationCap size={48} className={`${darkMode ? 'text-blue-400' : 'text-blue-600'} mr-4`} />
+            <h1 className={`text-xl sm:text-2xl md:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
               Programación Docente UASD 2024-20
             </h1>
           </div>
-          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden">
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-          <nav className={`${isMenuOpen ? 'block' : 'hidden'} md:block absolute md:relative top-full right-0 w-48 md:w-auto bg-white md:bg-transparent shadow-md md:shadow-none z-10`}>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={toggleDarkMode}
+              className={`p-2 rounded-full ${darkMode ? 'bg-gray-700 text-yellow-300' : 'bg-gray-200 text-gray-600'} hover:opacity-80 transition-colors`}
+              aria-label={darkMode ? 'Activar modo claro' : 'Activar modo oscuro'}
+            >
+              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden">
+              {isMenuOpen ? (
+                <X size={24} className={darkMode ? 'text-white' : ''} />
+              ) : (
+                <Menu size={24} className={darkMode ? 'text-white' : ''} />
+              )}
+            </button>
+          </div>
+          <nav className={`${isMenuOpen ? 'block' : 'hidden'} md:block absolute md:relative top-full right-0 w-48 md:w-auto ${darkMode ? 'bg-gray-800' : 'bg-white'} md:bg-transparent shadow-md md:shadow-none z-10`}>
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 md:flex md:space-x-4 md:space-y-0">
-              <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-blue-600 hover:text-blue-800 hover:bg-gray-100">Inicio</a>
-              <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-blue-600 hover:text-blue-800 hover:bg-gray-100">Virtual</a>
-              <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-blue-600 hover:text-blue-800 hover:bg-gray-100">SemiPresencial</a>
+              <a href="#" className={`block px-3 py-2 rounded-md text-base font-medium ${darkMode ? 'text-blue-400 hover:text-blue-300 hover:bg-gray-700' : 'text-blue-600 hover:text-blue-800 hover:bg-gray-100'}`}>Inicio</a>
+              <a href="#" className={`block px-3 py-2 rounded-md text-base font-medium ${darkMode ? 'text-blue-400 hover:text-blue-300 hover:bg-gray-700' : 'text-blue-600 hover:text-blue-800 hover:bg-gray-100'}`}>Virtual</a>
+              <a href="#" className={`block px-3 py-2 rounded-md text-base font-medium ${darkMode ? 'text-blue-400 hover:text-blue-300 hover:bg-gray-700' : 'text-blue-600 hover:text-blue-800 hover:bg-gray-100'}`}>SemiPresencial</a>
             </div>
           </nav>
         </div>
@@ -128,7 +158,8 @@ function App() {
           <SearchBar 
             onSearch={handleSearch} 
             campuses={ALL_CAMPUSES} 
-            selectedCampus={selectedCampus} 
+            selectedCampus={selectedCampus}
+            darkMode={darkMode}
           />
           {currentSections.length > 0 ? (
             <>
@@ -136,20 +167,22 @@ function App() {
                 courses={currentCourses}
                 sections={currentSections}
                 onRateSection={handleRateSection}
+                darkMode={darkMode}
               />
               <Pagination
                 itemsPerPage={itemsPerPage}
-                totalItems={totalItems}
+                totalItems={filteredSections.length}
                 paginate={handlePageChange}
                 currentPage={currentPage}
+                darkMode={darkMode}
               />
-              <p className="text-sm text-gray-600 mt-4">
-                Mostrando {currentSections.length} de {totalItems} resultados
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-4`}>
+                Mostrando {currentSections.length} de {filteredSections.length} resultados
                 {selectedCampus && ` en ${selectedCampus}`}
               </p>
             </>
           ) : (
-            <p className="mt-8 text-lg text-gray-600">
+            <p className={`mt-8 text-lg ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               {selectedCampus
                 ? `No se encontraron asignaturas para el campus de ${selectedCampus}.`
                 : "No se encontraron asignaturas que coincidan con la búsqueda."}
@@ -158,11 +191,13 @@ function App() {
         </div>
       </main>
       
-      <footer className="bg-white shadow-md mt-8">
+      <footer className={`${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-md mt-8`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-gray-500">
           © 2024 Nicebott. Todos los derechos reservados.
         </div>
       </footer>
+
+      <Chat darkMode={darkMode} />
     </div>
   );
 }
