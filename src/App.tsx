@@ -33,7 +33,7 @@ function App() {
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [allSections, setAllSections] = useState<Section[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(20); // Increased items per page
   const [selectedCampus, setSelectedCampus] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [darkMode, setDarkMode] = useState(() => {
@@ -69,13 +69,15 @@ function App() {
     const normalizedQuery = removeDiacritics(searchQuery.toLowerCase());
     
     return allSections.filter(section => {
+      const course = allCourses.find(c => c.id === section.courseId);
+      
       const matchesSearch = !normalizedQuery || 
         removeDiacritics(section.professor.toLowerCase()).includes(normalizedQuery) ||
-        allCourses.some(course => 
-          course.id === section.courseId && 
-          (removeDiacritics(course.name.toLowerCase()).includes(normalizedQuery) ||
-           removeDiacritics(course.code.toLowerCase()).includes(normalizedQuery))
-        );
+        removeDiacritics(section.nrc.toLowerCase()).includes(normalizedQuery) ||
+        (course && (
+          removeDiacritics(course.name.toLowerCase()).includes(normalizedQuery) ||
+          removeDiacritics(course.code.toLowerCase()).includes(normalizedQuery)
+        ));
 
       const matchesCampus = !selectedCampus || section.campus === selectedCampus;
 
@@ -111,6 +113,7 @@ function App() {
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const toggleDarkMode = () => {
